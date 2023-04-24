@@ -17,8 +17,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
-    MineWebSocket mine( QUrl(QStringLiteral("ws://192.168.35.177:8080/minesweeper")) );
-    engine.rootContext()->setContextProperty("Mine", &mine);
+
     const QUrl url(u"qrc:Main/main.qml"_qs);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreated, &app,
@@ -27,6 +26,9 @@ int main(int argc, char *argv[])
                 QCoreApplication::exit(-1);
         },
         Qt::QueuedConnection);
+
+    MineWebSocket mine( QUrl(QStringLiteral("ws://192.168.35.177:8080/minesweeper")) );
+    engine.rootContext()->setContextProperty("Mine", &mine);
 
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/qml");
     engine.addImportPath(":/");

@@ -15,10 +15,11 @@ class MineWebSocket : public QObject
 public:
     explicit MineWebSocket(const QUrl &url, QObject *parent = nullptr);
     virtual ~MineWebSocket();
-    Q_INVOKABLE void toggle();
+    Q_INVOKABLE void toggle(const QString& gameid,const QString userid);
+    Q_INVOKABLE void send(const QJsonObject &content);
 
 Q_SIGNALS:
-    void receiveJSON(const QString& text);
+    void receiveJSON(const QJsonObject& json);
 
 public Q_SLOTS:
     void onConnected();
@@ -28,6 +29,7 @@ public Q_SLOTS:
 private:
     QWebSocket m_pWebSocketClient;
     QUrl m_Url;
+    QString m_gameID;
 };
 
 #endif // MINEWEBSOCKET_H

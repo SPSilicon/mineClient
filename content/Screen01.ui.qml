@@ -16,28 +16,4 @@ Rectangle {
     height: 720
 
     color: Constants.backgroundColor
-
-    TextField {
-        id: textField1
-        x: 45
-        y: 8
-        placeholderText: qsTr("GameID")
-    }
-
-    TextField {
-        id: textField2
-        x: 194
-        y: 8
-        placeholderText: qsTr("UserID")
-    }
-
-    TextArea {
-        id: log
-        x: 45
-        y: 77
-        width: 1196
-        height: 601
-        placeholderTextColor: "#60000000"
-        placeholderText: qsTr("Text Area")
-    }
 }

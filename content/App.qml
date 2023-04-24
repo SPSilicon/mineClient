@@ -5,42 +5,72 @@ import QtQuick 6.2
 import QtQuick.Controls
 import mineClient
 
-Window {
+Window{
+    id: window
     width: 1280
     height: 720
 
     visible: true
-    title: "mineClient"
+    color: "#959494"
 
-    Screen01 {
-        id: mainScreen
-        x: 0
-        y: 0
+
+    minimumHeight: 720
+    minimumWidth: 1280
+
+    title: "mineClient"
+    TextField {
+        id: gameid
+        x: 45
+        anchors.right: userid.left
+        anchors.top: parent.top
+        anchors.rightMargin: 29
+        anchors.topMargin: 8
+        placeholderText: qsTr("GameID")
     }
+
+    TextField {
+        id: userid
+        x: 194
+        anchors.right: button.left
+        anchors.top: parent.top
+        anchors.topMargin: 8
+        anchors.rightMargin: 27
+        placeholderText: qsTr("UserID")
+    }
+
+    Flickable {
+        id: flickable
+        TextArea {
+
+            id: text1
+            width: window.contentItem.width-100
+            height: window.contentItem.height-100
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.leftMargin: 45
+            anchors.topMargin: 77
+            placeholderTextColor: "#60000000"
+            placeholderText: qsTr("Text Area")
+            Connections{
+                target: Mine
+
+                onReceiveJSON: function(json){
+                    for(var i in json ){
+                        text1.append(i);
+                    }
+                }
+            }
+        }
+    }
+
 
     Button {
         id: button
         x: 341
         y: 8
         text: "JOIN"
-        onClicked: Mine.toggle()
+        onClicked: Mine.toggle(gameid.text,userid.text)
     }
 
-    Text {
-        id: text1
-        x: 217
-        y: 168
-        width: 810
-        height: 385
-        text: qsTr("Text")
-        font.pixelSize: 12
-
-        Connections{
-            target: Mine
-
-            onReceiveJSON: function(text){text1.text = text;}
-        }
-    }
-        
 }
 
