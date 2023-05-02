@@ -11,6 +11,8 @@ MineWebSocket::MineWebSocket(const QUrl &url, QObject *parent)
     m_gameID = QStringLiteral("");
     connect(&m_pWebSocketClient, &QWebSocket::connected,
             this, &MineWebSocket::onConnected);
+    connect(&m_pWebSocketClient, &QWebSocket::disconnected,
+            this, &MineWebSocket::onClosed);
     connect(&m_pWebSocketClient, &QWebSocket::textMessageReceived,
             this, &MineWebSocket::onReceiveMessage);
     //m_pWebSocketClient.open(url);
@@ -22,23 +24,41 @@ MineWebSocket::~MineWebSocket()
 }
 
 void MineWebSocket::onConnected() {
+    Q_EMIT connected();
     qDebug() << "connected!";
 }
 
-void MineWebSocket::onClosed(){}
+void MineWebSocket::onClosed(){
+    Q_EMIT closed();
+}
 
-void MineWebSocket::toggle(const QString& gameid,const QString userid) {
+void MineWebSocket::toggle(const QJsonObject &content) {
     if(m_pWebSocketClient.state() == QAbstractSocket::SocketState::ConnectedState) {
-        m_pWebSocketClient.close();
+        send(content);
     } else if(m_pWebSocketClient.state() == QAbstractSocket::SocketState::UnconnectedState){
-        m_pWebSocketClient.open(m_Url);
+        return;
     }
-    qDebug() << "invoked!" << gameid << userid;
+    qDebug() << "invoked!" << content.keys();
 }
 
 void MineWebSocket::send(const QJsonObject &content) {
     QString str(QJsonDocument(content).toJson(QJsonDocument::Compact));
-    m_pWebSocketClient.sendTextMessage(str);
+    qDebug() << "sending.." << str << m_pWebSocketClient.sendTextMessage(str);
+}
+
+
+
+bool MineWebSocket::conn() {
+    if(m_pWebSocketClient.state() == QAbstractSocket::SocketState::ConnectedState) {
+        m_pWebSocketClient.close();
+
+        return false;
+    } else if(m_pWebSocketClient.state() == QAbstractSocket::SocketState::UnconnectedState){
+        m_pWebSocketClient.open(m_Url);
+
+        return true;
+    }
+    return false;
 }
 
 
@@ -49,7 +69,15 @@ void MineWebSocket::onReceiveMessage(const QString& message) {
     }
     else {
         QJsonObject json = doc.object();
+
         Q_EMIT receiveJSON(json);
+        //qDebug() << json["id"].toString();
+        if(m_gameID.compare(json["id"].toString())!=0) {
+            m_gameID = json["id"].toString();
+            Q_EMIT initGame(json["height"].toInt(),json["width"].toInt());
+        } else {
+            Q_EMIT updateGame(json["board"].toArray());
+        }
         /*QString str;
         for(auto i : json) {
              qDebug() << i.toString();
