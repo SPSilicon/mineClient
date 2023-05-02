@@ -34,7 +34,6 @@ int main(int argc, char *argv[])
     engine.addImportPath(":/");
 
 
-
     engine.load(url);
 
     if (engine.rootObjects().isEmpty()) {
