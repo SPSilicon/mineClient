@@ -42,8 +42,8 @@ class MineWebSocket : public QObject
 public:
     explicit MineWebSocket(const QUrl &url, QObject *parent = nullptr);
     virtual ~MineWebSocket();
-    Q_INVOKABLE void toggle(const QJsonObject &content);
-    Q_INVOKABLE void send(const QJsonObject &content);
+    Q_INVOKABLE void join(const QString &userID, const QString &gameID);
+    Q_INVOKABLE void send(const qint32 &loc, const QString& sender, const bool& flag);
     Q_INVOKABLE bool conn();
 
 Q_SIGNALS:

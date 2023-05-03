@@ -43,8 +43,8 @@ Window{
         TextArea {
 
             id: text1
-            width: window.contentItem.width-100
-            height: window.contentItem.height-100
+            width: 251
+            height: 587
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.leftMargin: 45
@@ -60,7 +60,7 @@ Window{
                         txt += i+" : "+json[i]+"\n";
                     }
                     //gridView.width = 18*json["width"];
-                    listModel.clear();
+                    //listModel.clear();
                     //for(let i in json["board"]) {
                     //    listModel.append({name:json["board"][i]+""});
                     //}
@@ -80,16 +80,8 @@ Window{
         width: 87
         height: 48
         text: "JOIN"
-        onClicked: function() {
-            var clientMessage={
-                id : gameid.text,
-                actions : [],
-                host : userid.text
-            };
+        onClicked: Mine.join(userid.text, gameid.text);
 
-
-            Mine.toggle(clientMessage);
-        }
     }
 
     Button {
@@ -127,10 +119,10 @@ Window{
 
     GridView {
         id: gridView
-        x: 231
-        y: 144
+        x: 341
+        y: 112
 
-        width: 831
+        width: 897
         height: 497
         interactive: false
         contentWidth: 18
@@ -139,6 +131,7 @@ Window{
         cellWidth: 18
         cellHeight: 18
         delegate: Column {
+
             width: 18
             height: 18
 
@@ -154,23 +147,23 @@ Window{
                 //height: 18
 
                 MouseArea{
+                    id : mouse
+
                     anchors.fill: parent
+
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked : function() {
-                        if()
-                        index.text = name+"c";
+                        Mine.send(index, userid.text, false);
                     }
                     onPressed : function() {
                         gRect.color = "grey";
                     }
-                    onReleased: function() {
-                        gRect.color = "white";
-                    }
+
 
                 }
 
                 Text{
                     anchors.horizontalCenter: parent.horizontalCenter
-                    id : index
                     font.pixelSize: 12
                     font.bold: true
                     padding: 0
@@ -198,11 +191,11 @@ Window{
                 for(var i=0;i<height*width;++i) {
                     listModel.append({name:i+"",acolor: "white"});
                 }
-
             }
 
 
             onUpdateGame: function(board) {
+
                 for(var idx=0;idx<board.length;++idx){
                     if(board[idx]===9) {
                         listModel.set(idx,{name:"",acolor: "white"});
@@ -215,8 +208,10 @@ Window{
                     } else {
                         listModel.set(idx,{name:board[idx]+"",acolor: "grey"});
                     }
+
                     //listModel.get(i).name = board[i];
                 }
+
             }
         }
 
