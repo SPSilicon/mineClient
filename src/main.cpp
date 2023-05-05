@@ -7,6 +7,7 @@
 
 #include "minewebsocket.h"
 #include "app_environment.h"
+#include "minelistmodel.h"
 #include "import_qml_components_plugins.h"
 #include "import_qml_plugins.h"
 
@@ -26,6 +27,9 @@ int main(int argc, char *argv[])
                 QCoreApplication::exit(-1);
         },
         Qt::QueuedConnection);
+
+    Minelistmodel model;
+    engine.rootContext()->setContextProperty("mineModel", &model);
 
     MineWebSocket mine( QUrl(QStringLiteral("ws://192.168.35.177:8080/minesweeper")) );
     engine.rootContext()->setContextProperty("Mine", &mine);
