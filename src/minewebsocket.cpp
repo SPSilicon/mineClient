@@ -1,56 +1,61 @@
 #include "minewebsocket.h"
+#include "src/minelistmodel.h"
+
 #include <QDebug>
 using namespace std;
 
 QT_USE_NAMESPACE
 
-MineWebSocket::MineWebSocket(const QUrl &url, QObject *parent)
-:   QObject(parent)
+MineSweeper::MineSweeper(const QUrl &url, MineGameTable& model,AttenderListModel& attenderModel, QObject *parent)
+    :   QObject(parent), m_gameTable(model), m_attenderModel(attenderModel)
 {
     m_Url = url;
     m_gameID = QStringLiteral("");
     connect(&m_pWebSocketClient, &QWebSocket::connected,
-            this, &MineWebSocket::onConnected);
+            this, &MineSweeper::onConnected);
     connect(&m_pWebSocketClient, &QWebSocket::disconnected,
-            this, &MineWebSocket::onClosed);
+            this, &MineSweeper::onClosed);
     connect(&m_pWebSocketClient, &QWebSocket::textMessageReceived,
-            this, &MineWebSocket::onReceiveMessage);
+            this, &MineSweeper::onReceiveMessage);
     //m_pWebSocketClient.open(url);
 }
 
-MineWebSocket::~MineWebSocket()
+MineSweeper::~MineSweeper()
 {
     m_pWebSocketClient.close();
 }
 
-void MineWebSocket::onConnected() {
+void MineSweeper::onConnected() {
     Q_EMIT connected();
     qDebug() << "connected!";
 }
 
-void MineWebSocket::onClosed(){
+void MineSweeper::onClosed(){
     Q_EMIT closed();
 }
 
-void MineWebSocket::join(const QString &userID,const QString &gameID) {
+void MineSweeper::join(const QString &userID,const QString &gameID) {
     if(m_pWebSocketClient.state() == QAbstractSocket::SocketState::ConnectedState) {
-        m_gameID = gameID;
-        send(-1,userID,false);
+        send(-1,0,userID,gameID.trimmed(),false);
     } else if(m_pWebSocketClient.state() == QAbstractSocket::SocketState::UnconnectedState){
         return;
     }
     qDebug() << "invoked!";
 }
 
-void MineWebSocket::send(const qint32 &loc,const QString& sender, const bool& flag) {
-    qDebug() << "sending.." << loc;
+void MineSweeper::send(const qint32 &h,const qint32 &w, const QString& sender,const QString& gameid, const bool& flag) {
+    qDebug() << "sending.." << h << "," << w;
     QJsonArray actions;
     QJsonObject action;
-    action.insert("actionType","DIG");
-    action.insert("loc",loc);
+    if(flag) {
+        action.insert("actionType","FLAG");
+    } else {
+        action.insert("actionType","DIG");
+    }
+    action.insert("loc",h*m_gameTable.getWidth()+w);
     actions.append(action);
     QJsonObject json;
-    json.insert("id",m_gameID);
+    json.insert("id",gameid.trimmed());
     json.insert("actions",actions);
     json.insert("host",sender);
 
@@ -59,8 +64,7 @@ void MineWebSocket::send(const qint32 &loc,const QString& sender, const bool& fl
 }
 
 
-
-bool MineWebSocket::conn() {
+bool MineSweeper::conn() {
     if(m_pWebSocketClient.state() == QAbstractSocket::SocketState::ConnectedState) {
         m_pWebSocketClient.close();
 
@@ -72,8 +76,11 @@ bool MineWebSocket::conn() {
     return false;
 }
 
+QString MineSweeper::curGameid() const{
+    return m_gameID;
+};
 
-void MineWebSocket::onReceiveMessage(const QString& message) {
+void MineSweeper::onReceiveMessage(const QString& message) {
     QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
     if(doc.isNull()) {
         //qDebug() << "init ";
@@ -83,25 +90,59 @@ void MineWebSocket::onReceiveMessage(const QString& message) {
 
         Q_EMIT receiveJSON(json);
         //qDebug() << json["id"].toString();
+
+        m_attenderModel.removeRows(0,m_attenderModel.rowCount());
+        for(auto &&i : json["attenders"].toArray()) {
+            Attender attender = Attender(i.toString());
+            m_attenderModel.addAttender(attender);
+        }
+
         if(m_gameID.compare(json["id"].toString())!=0) {
-            m_gameID = json["id"].toString();
+            qDebug() << "initGame";
+            m_gameID = json["id"].toString().trimmed();
             Q_EMIT initGame(json["height"].toInt(),json["width"].toInt());
+            
+            m_gameTable.setWidth(json["width"].toInt());
+            m_gameTable.setHeight(json["height"].toInt());
+            
+            m_gameTable.clearList();
+            auto&& board = json["board"].toArray();
+            for(int i=0;i<m_gameTable.getHeight();++i) {
+                QList<Tile> tiles;
+                for(int j=0; j<m_gameTable.columnCount(); ++j) {
+                    tiles.append({" ","white","white"});
+                }
+                m_gameTable.addRow(tiles);
+            }
+
         } else {
             //qDebug() << "updateGame";
             Q_EMIT updateGame(json["board"].toArray());
-        }
-        /*QString str;
-        for(auto i : json) {
-             qDebug() << i.toString();
-             str.append(" "+i.toString());
-        }
+            auto&& board = json["board"].toArray();
+            
+            m_gameTable.setWidth(json["width"].toInt());
+            m_gameTable.setHeight(json["height"].toInt());
+            int w = m_gameTable.getWidth();
+            int h = m_gameTable.getHeight();
+            for(int i=0;i<h;++i)  {
+                for(int j=0; j<w; ++j){
+                    int value = board[i*w+j].toInt();
 
-        if(m_gameID.compare(json["gameid"].toString())==0) {
-            Q_EMIT receiveJSON(str);
-        } else {
-            Q_EMIT receiveJSON(str);
+                    if(value==9) {
+                        m_gameTable.setData(m_gameTable.index(i,j),QVariant::fromValue<Tile>({" ","black","white"}));
+                    } else if(value==10) {
+                        m_gameTable.setData(m_gameTable.index(i,j),QVariant::fromValue<Tile>({"🚩","black","white"}));
+                    } else if(value==0){
+                        m_gameTable.setData(m_gameTable.index(i,j),QVariant::fromValue<Tile>({"","black","grey"}));
+                    } else if(value==-1) {
+                        m_gameTable.setData(m_gameTable.index(i,j),QVariant::fromValue<Tile>({"💣","black","grey"}));
+                    } else {
+                        m_gameTable.setData(m_gameTable.index(i,j),QVariant::fromValue<Tile>({QString::number(value),"black","grey"}));
+                    }
+
+                }
+            }
         }
-        */
     }
 
 }

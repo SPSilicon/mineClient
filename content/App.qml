@@ -12,6 +12,8 @@ Window{
 
     visible: true
     color: "#959494"
+    maximumHeight: 720
+    maximumWidth: 1280
 
 
     minimumHeight: 720
@@ -38,39 +40,25 @@ Window{
         placeholderText: qsTr("UserID")
     }
 
-    Flickable {
-        id: flickable
-        TextArea {
+    ListView {
+        //TODO: ListView로 바꿔서 Attenders 목록출력하기
+        id: listView1
+        width: 251
+        height: 587
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: 45
+        anchors.topMargin: 77
+        model : attenders
 
-            id: text1
-            width: 251
-            height: 587
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.leftMargin: 45
-            anchors.topMargin: 77
-            placeholderTextColor: "#60000000"
-            placeholderText: qsTr("Text Area")
-            Connections{
-                target: Mine
-
-                onReceiveJSON: function(json){
-                    var txt = " ";
-                    for(var i in json ){
-                        txt += i+" : "+json[i]+"\n";
-                    }
-                    //gridView.width = 18*json["width"];
-                    //listModel.clear();
-                    //for(let i in json["board"]) {
-                    //    listModel.append({name:json["board"][i]+""});
-                    //}
-                    //gridView.modelChanged();
-
-                    text1.text = txt;
-                }
+        delegate: Column{
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text : attname
             }
         }
     }
+
 
 
     Button {
@@ -87,8 +75,11 @@ Window{
     Button {
         id: serverConnButton
         x: 1173
-        y: 8
         text: qsTr("server")
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.topMargin: 8
+        anchors.rightMargin: 42
         highlighted: false
         flat: false
 
@@ -100,11 +91,14 @@ Window{
     Text {
         id: connInfo
         x: 1021
-        y: 12
         width: 146
         height: 44
         text: qsTr("Disconnected")
+        anchors.right: serverConnButton.left
+        anchors.top: parent.top
         font.pixelSize: 23
+        anchors.topMargin: 12
+        anchors.rightMargin: 6
         Connections {
             target :Mine
 
@@ -113,110 +107,97 @@ Window{
         }
     }
 
-    ListModel {
-        id : listModel
-    }
+    TableView {
+        id: grdv1
 
-    GridView {
-        id: gridView
-        x: 341
-        y: 112
+        property int bsize : 30
+        property int tsize : 22
+        width: window.contentItem.width-400
+        height: window.contentItem.height-150
 
-        width: 897
-        height: 497
-        interactive: false
-        contentWidth: 18
+        anchors.left: parent.left
+        anchors.top: parent.top
 
-        model: listModel
-        cellWidth: 18
-        cellHeight: 18
+        anchors.leftMargin: 302
+        anchors.topMargin: 87
+
+        model: mineModel
+
         delegate: Column {
 
-            width: 18
-            height: 18
+            width: grdv1.bsize
+            height: grdv1.bsize
 
-           Rectangle{
-                id: gRect
-                anchors.horizontalCenter: parent.horizontalCenter
-                border.color: "black"
-                border.width: 1
-                color : acolor
-                width: 18
-                height: 18
-                //width: 18
-                //height: 18
+             Rectangle{
+                  id: bRect
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  border.color: "black"
+                  border.width: 1
+                  color : acolor
+                  width: grdv1.bsize
+                  height: grdv1.bsize
+                  //width: 18
+                  //height: 18
 
-                MouseArea{
-                    id : mouse
+                  MouseArea{
+                      anchors.fill: parent
+                      acceptedButtons: Qt.LeftButton | Qt.RightButton
+                      onClicked : function(mouse) {
 
-                    anchors.fill: parent
-
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-                    onClicked : function() {
-                        Mine.send(index, userid.text, false);
-                    }
-                    onPressed : function() {
-                        gRect.color = "grey";
-                    }
-
-
-                }
-
-                Text{
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    font.pixelSize: 12
-                    font.bold: true
-                    padding: 0
-                    rightPadding: 0
-                    leftPadding: 0
-                    bottomPadding: 4
-                    topPadding: 0
-                    text: name;
-                }
+                          if(mouse.button == Qt.LeftButton ) {
+                              Mine.send(row,column, userid.text, gameid.text, false);
+                          } else if(mouse.button == Qt.RightButton) {
+                              Mine.send(row,column, userid.text, gameid.text, true);
+                          }
+                      }
 
 
-            }
+
+                  }
+
+                  Text{
+                      anchors.horizontalCenter: parent.horizontalCenter
+                      font.pixelSize: 12
+                      font.bold: grdv1.tsize;
+                      padding: 0
+                      rightPadding: 0
+                      leftPadding: 0
+                      bottomPadding: 4
+                      topPadding: 0
+                      text: mtext;
+                  }
+
+
+             }
 
 
         }
-
-        Connections {
-            target :Mine
-
-            onInitGame: function(height, width) {
-                gridView.height = height*18;
-                gridView.width = width*18;
-
-                listModel.clear();
-                for(var i=0;i<height*width;++i) {
-                    listModel.append({name:i+"",acolor: "white"});
-                }
-            }
-
-
-            onUpdateGame: function(board) {
-
-                for(var idx=0;idx<board.length;++idx){
-                    if(board[idx]===9) {
-                        listModel.set(idx,{name:"",acolor: "white"});
-                    } else if(board[idx]===10) {
-                        listModel.set(idx,{name:"🚩",acolor: "white"});
-                    } else if(board[idx]===0){
-                        listModel.set(idx,{name:"",acolor: "grey"});
-                    } else if(board[idx]===-1) {
-                        listModel.set(idx,{name:"💣",acolor: "grey"});
-                    } else {
-                        listModel.set(idx,{name:board[idx]+"",acolor: "grey"});
-                    }
-
-                    //listModel.get(i).name = board[i];
-                }
-
-            }
-        }
-
-
     }
+
+        Text {
+            id: curGameID;
+            text: "gameid"
+            anchors.left: button.right
+            anchors.right: connInfo.left
+            anchors.top: parent.top
+            font.pixelSize: 28
+            horizontalAlignment: Text.AlignHCenter
+            anchors.rightMargin: 268
+            anchors.topMargin: 12
+            anchors.leftMargin: 276
+
+            Connections{
+                target: Mine
+
+                onReceiveJSON: function() {
+                   curGameID.text = Mine.curGameid();
+                   gameid.text = Mine.curGameid();
+               }
+            }
+        }
+
+
+
 
 }
 

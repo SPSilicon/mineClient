@@ -8,6 +8,7 @@
 #include "minewebsocket.h"
 #include "app_environment.h"
 #include "minelistmodel.h"
+#include "attenderlistmodel.h"
 #include "import_qml_components_plugins.h"
 #include "import_qml_plugins.h"
 
@@ -27,13 +28,15 @@ int main(int argc, char *argv[])
                 QCoreApplication::exit(-1);
         },
         Qt::QueuedConnection);
+    
+    MineGameTable model;
+    AttenderListModel attenderList;
+    MineSweeper mine( QUrl(QStringLiteral("ws://192.168.35.177:8080/minesweeper")), model, attenderList);
 
-    Minelistmodel model;
-    engine.rootContext()->setContextProperty("mineModel", &model);
 
-    MineWebSocket mine( QUrl(QStringLiteral("ws://192.168.35.177:8080/minesweeper")) );
+    engine.rootContext()->setContextProperty("attenders", &attenderList);
     engine.rootContext()->setContextProperty("Mine", &mine);
-
+    engine.rootContext()->setContextProperty("mineModel", &model);
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/qml");
     engine.addImportPath(":/");
 

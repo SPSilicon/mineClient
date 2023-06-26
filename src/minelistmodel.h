@@ -1,43 +1,62 @@
 #ifndef MINELISTMODEL_H
 #define MINELISTMODEL_H
 
-#include "qabstractitemmodel.h"
+#include <QAbstractListModel>
 
 class Tile {
 public:
-    Tile(const QString& value, const QString &tcolor, const QString &acolor);
+    Tile(const QString& text, const QString &tcolor, const QString &acolor);
+    Tile();
 
-    QString value() const;
+    QString text() const;
     QString acolor() const;
     QString tcolor() const;
+
+    void setText(const QString& text);
+    void setAcolor(const QString& acolor);
+    void setTcolor(const QString& tcolor);
 private:
-    QString m_value;
+    QString m_text;
     QString m_acolor;
     QString m_tcolor;
-};
 
-class Minelistmodel : public QAbstractListModel
+};
+Q_DECLARE_METATYPE(Tile);
+
+
+class MineGameTable : public QAbstractTableModel
 {
     Q_OBJECT
 public:
+
     enum TileRoles {
-        ValueRole = Qt::UserRole +1,
+        TextRole = Qt::UserRole +1,
         AcolorRole,
         TcolorRole
     };
 
-    Minelistmodel(QObject *parent = nullptr);
+    MineGameTable(QObject *parent = nullptr);
 
-    void addTile(const Tile &tile);
+    void addRow(QList<Tile> tile);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+    int columnCount(const QModelIndex &parent = QModelIndex()) const;
+    void setWidth(const qint32& v);
+    void setHeight(const qint32& v);
+    qint32 getHeight();
+    void clearList();
+    Q_INVOKABLE qint32 getWidth();
 
+
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
+
 protected:
     QHash<int,QByteArray> roleNames() const;
 private:
-    QList<Tile> m_tiles;
+    QList<QList<Tile>> m_tiles;
+    qint32 m_width;
+    qint32 m_height;
 };
 
 #endif // MINELISTMODEL_H

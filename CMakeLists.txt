@@ -16,6 +16,8 @@ message(FATAL_ERROR "You need Qt 6.2.0 or newer to build the application.")
 endif()
 
 qt_add_executable(${CMAKE_PROJECT_NAME}
+    src/attenderlistmodel.h
+    src/attenderlistmodel.cpp
     src/minelistmodel.h
     src/minelistmodel.cpp
     src/minewebsocket.h
